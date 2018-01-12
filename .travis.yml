@@ -1,0 +1,63 @@
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      addons:
+        apt: &x64-apt
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-4.8
+            - g++-4.8
+            - build-essential
+            - libglib2.0-dev
+            - libgtk2.0-dev
+            - libxtst-dev
+            - libxss-dev
+            - libpci-dev
+            - libdbus-1-dev
+            - libgconf2-dev
+            - libgnome-keyring-dev
+            - libnss3-dev
+            - libasound2-dev
+            - libpulse-dev
+            - libudev-dev
+
+language:
+  - c++
+
+before_install:
+  - DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
+  - mkdir -p ${DEPS_DIR} && cd ${DEPS_DIR}
+  - |
+    CMAKE_URL="http://www.cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
+    mkdir cmake && travis_retry wget --no-check-certificate --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
+    export PATH=${DEPS_DIR}/cmake/bin:${PATH}
+    export CXX="g++-4.8" CC="gcc-4.8"
+  - cd ${TRAVIS_BUILD_DIR}
+
+install:
+  - git clone https://github.com/FAForever/libwebrtc.git
+  - cd libwebrtc
+  - mkdir build
+  - cd build
+  - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${TRAVIS_BUILD_DIR}/output -DTARGET_CPU=x64
+
+script:
+  - make -j4 
+  - make install
+  - cd ${TRAVIS_BUILD_DIR}/output && tar Jcvf ../libwebrtc.tar.bz2 .
+
+before_deploy:
+  - git config --local user.name "kicsyromy"
+  - git config --local user.email "kicsyromy@gmail.com"
+  - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
+
+deploy:
+  provider: releases
+  api_key:
+    secure: RXW5/HbGWDUS7+zZ1zazYkNCyGgsZuAPyxiy9SlDcFybvDy4cf3FgzorwERdghCdIVQE2eKLPQmWmlt+q+VwMnJ2ni6VbEIcvWY5eYWiP4ewI1sb79Yg/IiB3OPxyMp0FG8CxS+6XAgiEpMYSvqltWuJ7M6fL2CPIGxn6LfvmF7dXX0okhPi291M+NN+mPxjI3fseyQ18Oa7o8HSEuBN9ZFgK12GjUWMxRka6ZttO8c3r5M83r2zCrYhKZw0BLkfTklEMT4dvAUZQCRdisLVDYz5n+Ps0d2D5sw5+kUy9+dHX6YGEo1nDwUy8sZtS79k4KozOiMTyU1YwADVQnxF//B+rfGcEDykb8nmSiKTyk0GQY2smPxQAQ+diznMROEv5DCioBZlKZrfMxD0Lf0gDvlXduq7q+k+zbFcg33jeqcqVthjvN7skV7lACCSUhgdZgsfRjXEbB3yEBFJ3brm5JVF6jeBoHdJ+pJEY5beiMKYZG7vWPXUNJofmngjxlQgogKS3p32aqBOGgbhdo1GqUWdMIRfGPgcidrgCiA3eo1o0gt/TAXHwHW4M+f0wYJWzRVL3nyHKE9g7EdL+ZfVGPM0L2rNc0Xad845tOpjkudzIJ0FR/kKHepw6l3K9wR2OJLc1UwKh4aT2x/WQIt6Z31ggF+08tOjXS88g4MuUXQ=
+  file: ${TRAVIS_BUILD_DIR}/libwebrtc.tar.bz2
+  skip_cleanup: true
+  on:
+    repo: kicsyromy/libwebrtc-build
