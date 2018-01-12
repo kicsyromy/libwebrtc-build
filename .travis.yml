@@ -46,12 +46,13 @@ install:
 script:
   - make -j4 
   - make install
+  - cp ${TRAVIS_BUILD_DIR}/libwebrtc/build/lib/libwebrtc.a ${TRAVIS_BUILD_DIR}/output/lib
   - cd ${TRAVIS_BUILD_DIR}/output && tar Jcvf ../libwebrtc.tar.bz2 .
 
 before_deploy:
   - git config --local user.name "kicsyromy"
   - git config --local user.email "kicsyromy@gmail.com"
-  - git tag "$(date +'%Y%m%d%H%M%S')-$(git log --format=%h -1)"
+  - git tag "webrtc_v63"
 
 deploy:
   provider: releases
